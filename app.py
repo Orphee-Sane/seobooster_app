@@ -2,71 +2,106 @@ import streamlit as st
 import pandas as pd
 import json
 import re
-import requests
 from datetime import datetime
+import requests
+import pyperclip  # Pour permettre la copie du texte
 
-# 📌 Function to generate CSV templates
-def generate_template(columns):
-    return ",".join(columns)
-
-# 📌 Function to clean URLs
+# 📌 Fonction pour nettoyer les URLs Club Med
 def clean_url(url):
     return re.sub(r"https?://(www\.)?clubmed\.[a-z\.]+", "", url)
 
-# 📌 Function to generate JSON ID
+# 📌 Générer un ID unique pour le fichier JSON
 def generate_id(locale):
     return datetime.now().strftime("%Y%m%d%H%M") + f"-Replace_seoBoosters-{locale}"
 
-# 📌 Streamlit Interface
-def main():
-    st.title("Private Club Med SEOBooster JSON Generator")
-    st.write("👋 This new app is made by Orpheus to ease the generation of seobooster.")
-    st.write("🚀 **Main Updates:** No repetition of the hosted page in the seobooster, locale validation from the input file, etc.")
+# 📌 Générer un fichier CSV template
+def generate_template(columns):
+    df = pd.DataFrame(columns=columns)
+    return df.to_csv(index=False).encode("utf-8")
 
-    # 📝 Download CSV Templates
+# 📌 Génération dynamique du JSON
+def generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale):
+    urls_df['url'] = urls_df['url'].apply(clean_url)
+    seo_booster_0_df['url'] = seo_booster_0_df['url'].apply(clean_url)
+    seo_booster_1_df['url'] = seo_booster_1_df['url'].apply(clean_url)
+
+    seo_booster_0 = [{"label": row['label'], "url": row['url'], "@metadata": {"type": "#/definitions/textLinkWithRelativeUrlMandatory"}}
+                      for _, row in seo_booster_0_df.iterrows()]
+    seo_booster_1 = [{"label": row['label'], "url": row['url'], "@metadata": {"type": "#/definitions/textLinkWithRelativeUrlMandatory"}}
+                      for _, row in seo_booster_1_df.iterrows()]
+
+    migrations = []
+    for _, row in urls_df.iterrows():
+        page_url = row['url']
+        seo_links_0 = [link for link in seo_booster_0 if link['url'] != page_url]
+        seo_links_1 = [link for link in seo_booster_1 if link['url'] != page_url]
+
+        migration = {
+            "$iterate": {
+                "filters": [
+                    {"has": "pages"},
+                    {"match": {"property": "url", "value": page_url}},
+                    {"has": "components"},
+                    {"has": "seoBoosters"}
+                ],
+                "$migrate": [
+                    {"op": "replace", "path": "props.seoBoosters.0.links", "value": seo_links_0},
+                    {"op": "replace", "path": "props.seoBoosters.1.links", "value": seo_links_1}
+                ]
+            }
+        }
+        migrations.append(migration)
+
+    return {
+        "id": generate_id(locale),
+        "locales": [locale],
+        "migrations": migrations,
+        "contentId": "dcx"
+    }
+
+# 📌 Interface Streamlit
+def main():
+    st.title("🔍 Private Club Med SEOBooster JSON Generator")
+    st.write("🚀 **This app is made by Orpheus!**")
+    st.write("🔹 Updates: **No duplicate hosted pages, locale validation, automatic templates, next steps email template.**")
+
+    # 📥 Télécharger les modèles CSV
     st.subheader("📥 Download CSV Templates")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.download_button("URLs Template", generate_template(["url", "locale"]), "urls_template.csv", "text/csv")
+    with col2:
+        st.download_button("SEO Booster 0 Template", generate_template(["label", "url", "title"]), "seo_booster_0_template.csv", "text/csv")
+    with col3:
+        st.download_button("SEO Booster 1 Template", generate_template(["label", "url", "title"]), "seo_booster_1_template.csv", "text/csv")
+
     st.write("ℹ️ **Pro tips:** Ensure URLs contain your locale and all pages you want to update.")
     st.write("ℹ️ **SEO Boosters 0 & 1:** Must contain at least **23 pages**, a title, and labels (anchor text).")
 
-    col1, col2, col3 = st.columns(3)
+    # 📤 Upload des fichiers CSV
+    st.subheader("📤 Upload CSV Files")
+    uploaded_urls = st.file_uploader("Upload URLs CSV file", type="csv")
+    uploaded_seo_0 = st.file_uploader("Upload SEO Booster 0 CSV file", type="csv")
+    uploaded_seo_1 = st.file_uploader("Upload SEO Booster 1 CSV file", type="csv")
 
+    # 🏷️ Sélection de la locale
+    locale = st.text_input("Enter locale code (e.g., fr-FR)", "fr-FR")
+
+    # 🗓️ Ajout de champs dynamiques pour le mois et le sujet
+    col1, col2 = st.columns(2)
     with col1:
-        st.download_button(
-            label="📄 URLs Template",
-            data=generate_template(["url", "locale"]),
-            file_name="urls_template.csv",
-            mime="text/csv"
-        )
+        month = st.selectbox("📆 Select Month", [datetime.now().strftime("%B"), "January", "February", "March", "April",
+                                                 "May", "June", "July", "August", "September", "October", "November", "December"])
     with col2:
-        st.download_button(
-            label="📄 SEO Booster 0 Template",
-            data=generate_template(["label", "url", "title"]),
-            file_name="seo_booster_0_template.csv",
-            mime="text/csv"
-        )
-    with col3:
-        st.download_button(
-            label="📄 SEO Booster 1 Template",
-            data=generate_template(["label", "url", "title"]),
-            file_name="seo_booster_1_template.csv",
-            mime="text/csv"
-        )
-
-    # 📝 Upload CSV Files
-    st.subheader("📤 Upload your CSV files")
-    uploaded_urls = st.file_uploader("📌 Upload URLs CSV file", type="csv")
-    uploaded_seo_0 = st.file_uploader("📌 Upload SEO Booster 0 CSV file", type="csv")
-    uploaded_seo_1 = st.file_uploader("📌 Upload SEO Booster 1 CSV file", type="csv")
-
-    # 📌 Locale validation
-    locale = st.text_input("🌍 Enter locale code (e.g., fr-FR)", "fr-FR")
+        topic = st.text_input("📝 Enter Topic", "")
 
     if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
         urls_df = pd.read_csv(uploaded_urls)
         seo_booster_0_df = pd.read_csv(uploaded_seo_0)
         seo_booster_1_df = pd.read_csv(uploaded_seo_1)
 
-        # ✅ Validate locale against the file
+        # ✅ Validation du locale
         if "locale" in urls_df.columns:
             valid_locales = urls_df["locale"].unique()
             if locale not in valid_locales:
@@ -75,56 +110,40 @@ def main():
             else:
                 st.success("✅ Locale is valid.")
 
-        # 📌 Generate JSON
-        if st.button("🚀 Generate JSON"):
+        # 🚀 Génération du JSON
+        if st.button("Generate JSON"):
             result = generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale)
             st.json(result)
 
             json_filename = f"seo_boosters_{locale}.json"
-            st.download_button(
-                label="📥 Download JSON file",
-                data=json.dumps(result, indent=2),
-                file_name=json_filename,
-                mime="application/json"
-            )
+            st.download_button("Download JSON file", json.dumps(result, indent=2), json_filename, "application/json")
 
-            # 📌 Instructions after JSON generation
-            st.subheader("✅ Next Steps: Send Your SEO Booster Request")
-            st.write("📧 **Now, send your input files to the SEO Booster team!**")
-            st.write("🚀 Use the following format for your email subject:")
+            # 📩 Génération dynamique de l'email
+            if topic:
+                email_subject = f"SEO Booster Request - {locale} - {month} - {topic}"
+                email_body = f"""
+                Subject: {email_subject}
 
-            # 📌 Generate email template dynamically
-            country = locale.split("-")[1] if "-" in locale else locale.upper()
-            month = datetime.now().strftime("%B")
-            topic = "SEO Update"
+                Hello Team,
 
-            email_subject = f"Seobooster request - {country} - {month} - {topic}"
-            email_body = f"""
-Hello,
+                Please find attached the JSON file for the SEO Booster update.
 
-Please process the SEO Booster update for the country **{country}**.
+                - **Locale**: {locale}
+                - **Month**: {month}
+                - **Topic**: {topic}
+                - **Generated on**: {datetime.now().strftime('%Y-%m-%d')}
+                
+                Let me know if you need any adjustments.
 
-📎 **Attached files:**  
-- JSON generated via the SEO Booster tool  
-- CSV files used for generation  
+                Best regards,
+                [Your Name]
+                """
+                st.subheader("📧 Email Template")
+                st.text_area("📩 Copy & Paste this email:", email_body, height=150)
 
-📌 **Request details:**  
-- **Country:** {country}  
-- **Month:** {month}  
-- **Topic:** {topic}  
-
-Thank you for your support.
-
-Best regards,  
-[Your Name]
-"""
-
-            st.text_area("📩 Email Template", email_body, height=200)
-            st.button("📋 Copy Email", on_click=lambda: st.session_state.update({"email_text": email_body}))
-
-            # 📌 Mailto link
-            email_link = f"mailto:seobooster@clubmed.com?subject={email_subject.replace(' ', '%20')}&body={email_body.replace(' ', '%20').replace('\n', '%0A')}"
-            st.markdown(f"[📧 Open Email Client]( {email_link} )", unsafe_allow_html=True)
+                if st.button("📋 Copy Email to Clipboard"):
+                    pyperclip.copy(email_body)
+                    st.success("📎 Email copied to clipboard!")
 
 if __name__ == "__main__":
     main()
