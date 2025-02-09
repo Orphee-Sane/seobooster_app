@@ -4,7 +4,26 @@ import json
 import re
 import requests
 from datetime import datetime
-from google.colab import drive
+#from google.colab import drive
+
+st.title("Générateur de JSON pour SEO Boosters")
+
+# Télécharger les fichiers CSV
+uploaded_urls = st.file_uploader("Uploader le fichier des URLs", type=["csv"])
+uploaded_seo_0 = st.file_uploader("Uploader le fichier SEO Boosters 0", type=["csv"])
+uploaded_seo_1 = st.file_uploader("Uploader le fichier SEO Boosters 1", type=["csv"])
+
+if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
+    urls_df = pd.read_csv(uploaded_urls)
+    seo_booster_0_df = pd.read_csv(uploaded_seo_0)
+    seo_booster_1_df = pd.read_csv(uploaded_seo_1)
+
+    st.success("Fichiers chargés avec succès !")
+    
+    # Ajoute ici ton code pour transformer les données en JSON
+else:
+    st.warning("Veuillez uploader tous les fichiers pour continuer.")
+
 
 # 📌 Fonction améliorée pour supprimer toutes les extensions de clubmed
 def clean_url(url):
@@ -23,12 +42,12 @@ def generate_id(locale):
     return datetime.now().strftime("%Y%m%d%H%M") + f"-Replace_seoBoosters-{locale}"
 
 # 📌 Fonction pour charger et vérifier les fichiers CSV
-def load_csv_files():
-    urls_df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/SEO Booster - Club Med/urls.csv")
-    seo_booster_0_df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/SEO Booster - Club Med/seoBoosters.0.csv")
-    seo_booster_1_df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/SEO Booster - Club Med/seoBoosters.1.csv")
-    
-    return urls_df, seo_booster_0_df, seo_booster_1_df
+#def load_csv_files():
+#    urls_df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/SEO Booster - Club Med/urls.csv")
+#    seo_booster_0_df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/SEO Booster - Club Med/seoBoosters.0.csv")
+#    seo_booster_1_df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/SEO Booster - Club Med/seoBoosters.1.csv")
+#    
+#    return urls_df, seo_booster_0_df, seo_booster_1_df
 
 # 📌 Fonction principale pour générer le JSON
 def generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale):
