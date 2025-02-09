@@ -4,12 +4,13 @@ import json
 import re
 import requests
 from datetime import datetime
+import io
 
-# 📌 Fonction pour nettoyer les URLs
+# 📌 Function to clean URLs
 def clean_url(url):
     return re.sub(r"https?://(www\.)?clubmed\.[a-z\.]+", "", url)
 
-# 📌 Fonction pour obtenir la réponse HTTP d'une URL
+# 📌 Function to get HTTP status of a URL
 def get_http_status(url):
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)
@@ -17,11 +18,11 @@ def get_http_status(url):
     except requests.RequestException:
         return None
 
-# 📌 Fonction pour générer l'ID
+# 📌 Function to generate the migration ID
 def generate_id(locale):
     return datetime.now().strftime("%Y%m%d%H%M") + f"-Replace_seoBoosters-{locale}"
 
-# 📌 Fonction principale pour générer le JSON
+# 📌 Function to generate JSON for SEO Boosters
 def generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale):
     urls_df['status_code'] = urls_df['url'].apply(get_http_status)
     seo_booster_0_df['status_code'] = seo_booster_0_df['url'].apply(get_http_status)
@@ -39,13 +40,13 @@ def generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale):
         {"label": row['label'], "url": row['url'], "@metadata": {"type": "#/definitions/textLinkWithRelativeUrlMandatory"}}
         for _, row in seo_booster_0_df.iterrows()
     ]
-    title_0 = seo_booster_0_df['title'].iloc[0] if not seo_booster_0_df.empty else "Titre par défaut"
+    title_0 = seo_booster_0_df['title'].iloc[0] if not seo_booster_0_df.empty else "Default Title"
 
     seo_booster_1 = [
         {"label": row['label'], "url": row['url'], "@metadata": {"type": "#/definitions/textLinkWithRelativeUrlMandatory"}}
         for _, row in seo_booster_1_df.iterrows()
     ]
-    title_1 = seo_booster_1_df['title'].iloc[0] if not seo_booster_1_df.empty else "Titre par défaut"
+    title_1 = seo_booster_1_df['title'].iloc[0] if not seo_booster_1_df.empty else "Default Title"
 
     migrations = []
     for _, row in urls_df.iterrows():
@@ -83,33 +84,74 @@ def generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale):
 
     return output_json
 
-# 📌 Interface utilisateur Streamlit
-def main():
-    st.title("Générateur de JSON pour SEO Boosters")
-    st.write("👋 Bienvenue dans l'outil de génération de JSON pour les SEO Boosters !")
+# 📌 Function to generate CSV templates
+def generate_template(columns):
+    df = pd.DataFrame(columns=columns)
+    csv_buffer = io.StringIO()
+    df.to_csv(csv_buffer, index=False)
+    return csv_buffer.getvalue()
 
-    # 📝 Téléchargez vos fichiers CSV
-    uploaded_urls = st.file_uploader("Téléchargez le fichier CSV des URLs", type="csv")
-    uploaded_seo_0 = st.file_uploader("Téléchargez le fichier CSV de SEO Booster 0", type="csv")
-    uploaded_seo_1 = st.file_uploader("Téléchargez le fichier CSV de SEO Booster 1", type="csv")
+# 📌 Streamlit Interface
+def main():
+    st.title("SEO Booster JSON Generator")
+    st.write("👋 Welcome to the SEO Booster JSON Generator!")
+
+    # 📝 Download CSV Templates
+    st.subheader("📥 Download CSV Templates")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.download_button(
+            label="Download URLs Template",
+            data=generate_template(["url", "locale"]),
+            file_name="urls_template.csv",
+            mime="text/csv"
+        )
+    with col2:
+        st.download_button(
+            label="Download SEO Booster 0 Template",
+            data=generate_template(["label", "url", "title"]),
+            file_name="seo_booster_0_template.csv",
+            mime="text/csv"
+        )
+    with col3:
+        st.download_button(
+            label="Download SEO Booster 1 Template",
+            data=generate_template(["label", "url", "title"]),
+            file_name="seo_booster_1_template.csv",
+            mime="text/csv"
+        )
+
+    # 📝 Upload CSV Files
+    st.subheader("📤 Upload your CSV files")
+    uploaded_urls = st.file_uploader("Upload URLs CSV file", type="csv")
+    uploaded_seo_0 = st.file_uploader("Upload SEO Booster 0 CSV file", type="csv")
+    uploaded_seo_1 = st.file_uploader("Upload SEO Booster 1 CSV file", type="csv")
+
+    locale = st.text_input("Enter locale code (e.g., fr-FR)", "fr-FR")
 
     if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
         urls_df = pd.read_csv(uploaded_urls)
         seo_booster_0_df = pd.read_csv(uploaded_seo_0)
         seo_booster_1_df = pd.read_csv(uploaded_seo_1)
 
-        locale = st.text_input("Entrez le code de locale (ex: fr-FR)", "fr-FR")
+        # Validate locale against the file
+        if "locale" in urls_df.columns:
+            valid_locales = urls_df["locale"].unique()
+            if locale not in valid_locales:
+                st.error(f"❌ Locale '{locale}' does not match the uploaded file. Available locales: {', '.join(valid_locales)}")
+                return
+            else:
+                st.success("✅ Locale is valid.")
 
-        if st.button("Générer le JSON"):
+        if st.button("Generate JSON"):
             result = generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale)
             st.json(result)
 
             json_filename = f"seo_boosters_{locale}.json"
-            with open(json_filename, 'w') as f:
-                json.dump(result, f, indent=2)
-
             st.download_button(
-                label="Téléchargez le fichier JSON",
+                label="Download JSON file",
                 data=json.dumps(result, indent=2),
                 file_name=json_filename,
                 mime="application/json"
