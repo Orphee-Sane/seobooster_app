@@ -61,7 +61,7 @@ def generate_json(urls_df, seo_booster_0_df, seo_booster_1_df, locale):
 
 # 📌 Interface Streamlit
 def main():
-    st.title("🔍 Private Club Med SEOBooster JSON Generator")
+    st.title("🔍 Private Club Med SEOBooster Generator")
     st.write("🚀 **This app is made by Orpheus!**")
     st.write("🔹 Updates: **No duplicate hosted pages, locale validation, automatic templates, next steps email template.**")
 
@@ -76,8 +76,8 @@ def main():
     with col3:
         st.download_button("SEO Booster 1 Template", generate_template(["label", "url", "title"]), "seo_booster_1_template.csv", "text/csv")
 
-    st.write("ℹ️ **Pro tips:** Ensure URLs contain your locale and all pages you want to update.")
-    st.write("ℹ️ **SEO Boosters 0 & 1:** Must contain at least **23 pages**, a title, and labels (anchor text).")
+    st.write("ℹ️ **URLs file:** Ensure URLs contain your locale and all pages you want to update.")
+    st.write("ℹ️ **SEO Boosters 0 & 1 files:** Must contain at least **23 pages**, a title, and labels (anchor text).")
 
     # 📤 Upload des fichiers CSV
     st.subheader("📤 Upload CSV Files")
