@@ -97,19 +97,19 @@ def main():
         topic = st.text_input("📝 Enter Topic", "")
 
     if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
-    try:
-        urls_df = pd.read_csv(uploaded_urls, encoding="utf-8")
-        seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="utf-8")
-        seo_booster_1_df = pd.read_csv(uploaded_seo_1, encoding="utf-8")
-    except UnicodeDecodeError:
-        st.error("❌ Encoding issue detected. Trying an alternative encoding...")
         try:
-            urls_df = pd.read_csv(uploaded_urls, encoding="ISO-8859-1")
-            seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="ISO-8859-1")
-            seo_booster_1_df = pd.read_csv(uploaded_seo_1, encoding="ISO-8859-1")
-        except Exception as e:
-            st.error(f"⚠️ Failed to read CSV files. Error: {str(e)}")
-            st.stop()  # Arrête l'exécution de l'application si les fichiers ne peuvent pas être lus
+            urls_df = pd.read_csv(uploaded_urls, encoding="utf-8")
+            seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="utf-8")
+            seo_booster_1_df = pd.read_csv(uploaded_seo_1, encoding="utf-8")
+        except UnicodeDecodeError:
+            st.error("❌ Encoding issue detected. Trying an alternative encoding...")
+            try:
+                urls_df = pd.read_csv(uploaded_urls, encoding="ISO-8859-1")
+                seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="ISO-8859-1")
+                seo_booster_1_df = pd.read_csv(uploaded_seo_1, encoding="ISO-8859-1")
+            except Exception as e:
+                st.error(f"⚠️ Failed to read CSV files. Error: {str(e)}")
+                st.stop()  # Arrête l'exécution de l'application si les fichiers ne peuvent pas être lus
 
         # ✅ Validation du locale
         if "locale" in urls_df.columns:
