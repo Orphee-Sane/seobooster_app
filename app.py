@@ -116,7 +116,7 @@ if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
             valid_locales = urls_df["locale"].unique()
             if locale not in valid_locales:
                 st.error(f"❌ Locale '{locale}' does not match the uploaded file. Available locales: {', '.join(valid_locales)}")
-                return
+                st.stop()
             else:
                 st.success("✅ Locale is valid.")
 
