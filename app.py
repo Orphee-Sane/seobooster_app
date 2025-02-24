@@ -96,7 +96,7 @@ def main():
     with col2:
         topic = st.text_input("📝 Enter Topic", "")
 
-if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
+    if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
     try:
         urls_df = pd.read_csv(uploaded_urls, encoding="utf-8")
         seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="utf-8")
