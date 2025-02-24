@@ -96,28 +96,17 @@ def main():
     with col2:
         topic = st.text_input("📝 Enter Topic", "")
 
-    # 🚀 Vérifier si tous les fichiers sont bien uploadés AVANT de continuer
     if uploaded_urls and uploaded_seo_0 and uploaded_seo_1:
-        try:
-            urls_df = pd.read_csv(uploaded_urls, encoding="utf-8")
-            seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="utf-8")
-            seo_booster_1_df = pd.read_csv(uploaded_seo_1, encoding="utf-8")
-        except UnicodeDecodeError:
-            st.error("❌ Encoding issue detected. Trying an alternative encoding...")
-            try:
-                urls_df = pd.read_csv(uploaded_urls, encoding="ISO-8859-1")
-                seo_booster_0_df = pd.read_csv(uploaded_seo_0, encoding="ISO-8859-1")
-                seo_booster_1_df = pd.read_csv(uploaded_seo_1, encoding="ISO-8859-1")
-            except Exception as e:
-                st.error(f"⚠️ Failed to read CSV files. Error: {str(e)}")
-                st.stop()  # Arrête l'exécution de l'application si les fichiers ne peuvent pas être lus
+        urls_df = pd.read_csv(uploaded_urls)
+        seo_booster_0_df = pd.read_csv(uploaded_seo_0)
+        seo_booster_1_df = pd.read_csv(uploaded_seo_1)
 
         # ✅ Validation du locale
         if "locale" in urls_df.columns:
             valid_locales = urls_df["locale"].unique()
             if locale not in valid_locales:
                 st.error(f"❌ Locale '{locale}' does not match the uploaded file. Available locales: {', '.join(valid_locales)}")
-                st.stop()
+                return
             else:
                 st.success("✅ Locale is valid.")
 
